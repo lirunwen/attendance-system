@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}异常反馈{% endblock %}
+{% set active_page = 'anomalies' %}
+
+{% block content %}
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h4><i class="bi bi-exclamation-triangle"></i> 异常反馈</h4>
+    <form class="d-flex gap-2 align-items-center" method="get">
+        <select name="filter" class="form-select form-select-sm" style="width:auto;">
+            <option value="all" {% if filter == 'all' %}selected{% endif %}>全部</option>
+            <option value="unresolved" {% if filter == 'unresolved' %}selected{% endif %}>未处理</option>
+            <option value="resolved" {% if filter == 'resolved' %}selected{% endif %}>已处理</option>
+        </select>
+        <button type="submit" class="btn btn-sm btn-outline-primary">筛选</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>姓名</th>
+                        <th>工号</th>
+                        <th>状态</th>
+                        <th>上班卡</th>
+                        <th>下班卡</th>
+                        <th>备注</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in anomalies %}
+                    <tr class="{% if not a.clerk_remark %}table-warning{% endif %}">
+                        <td>{{ a.date }}</td>
+                        <td><strong>{{ a.employee_name }}</strong></td>
+                        <td style="color:var(--gray-400);font-size:.85rem;">{{ a.employee_id }}</td>
+                        <td>
+                            {% set status_map = {'late':'迟到','early_leave':'早退','both':'迟到+早退','no_punch_in':'缺少上班卡','no_punch_out':'缺少下班卡','absent':'缺勤','anomaly':'异常'} %}
+                            <span class="badge badge-{{ a.status }}">{{ status_map.get(a.status, a.status) }}</span>
+                        </td>
+                        <td>{{ a.punch_in.strftime('%H:%M') if a.punch_in else '<span class="text-muted">-</span>'|safe }}</td>
+                        <td>{{ a.punch_out.strftime('%H:%M') if a.punch_out else '<span class="text-muted">-</span>'|safe }}</td>
+                        <td style="max-width:200px;">
+                            {% if a.clerk_remark %}
+                            <small>{{ a.clerk_remark[:50] }}{% if a.clerk_remark|length > 50 %}...{% endif %}</small>
+                            {% else %}
+                            <span class="text-muted"><i class="bi bi-clock-history"></i> 待处理</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary" onclick="showRemark({{ a.id }})">
+                                <i class="bi bi-chat-dots"></i> 备注
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted py-5">无异常记录 🎉</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Remark Modal -->
+<div class="modal fade" id="remarkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="remarkForm">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-chat-dots" style="color:var(--primary)"></i> 处理异常</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.clerk_remark.label(class="form-label") }}
+                        {{ form.clerk_remark(class="form-control", id="remark_text", placeholder="请填写处理意见...") }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showRemark(id) {
+    fetch(`/anomalies/${id}/data`)
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('remark_text').value = d.remark || '';
+            document.getElementById('remarkForm').action = `/anomalies/${id}/remark`;
+            new bootstrap.Modal(document.getElementById('remarkModal')).show();
+        });
+}
+</script>
+{% endblock %}

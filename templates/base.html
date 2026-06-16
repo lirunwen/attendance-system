@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}考勤管理系统{% endblock %}</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="sidebar p-0">
+                <div class="sidebar-header">
+                    <div class="logo-icon"><i class="bi bi-building-check"></i></div>
+                    <h5>考勤管理</h5>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('main.index') }}">
+                            <i class="bi bi-speedometer2"></i> 仪表盘
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'shifts' %}active{% endif %}" href="{{ url_for('main.shifts') }}">
+                            <i class="bi bi-clock"></i> 班次管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'locations' %}active{% endif %}" href="{{ url_for('main.locations') }}">
+                            <i class="bi bi-geo-alt"></i> 地点管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'employees' %}active{% endif %}" href="{{ url_for('main.employees') }}">
+                            <i class="bi bi-people"></i> 员工管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'import' %}active{% endif %}" href="{{ url_for('main.import_data') }}">
+                            <i class="bi bi-upload"></i> 数据导入
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'attendance' %}active{% endif %}" href="{{ url_for('main.attendance_view') }}">
+                            <i class="bi bi-table"></i> 考勤查看
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'anomalies' %}active{% endif %}" href="{{ url_for('main.anomalies') }}">
+                            <i class="bi bi-exclamation-triangle"></i> 异常反馈
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'statistics' %}active{% endif %}" href="{{ url_for('main.statistics') }}">
+                            <i class="bi bi-graph-up"></i> 统计报表
+                        </a>
+                    </li>
+                </ul>
+                <div class="sidebar-footer">
+                    考勤管理系统 v1.0
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

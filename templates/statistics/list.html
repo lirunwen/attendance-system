@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}统计报表{% endblock %}
+{% set active_page = 'statistics' %}
+
+{% block content %}
+<div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h4><i class="bi bi-graph-up"></i> 统计报表</h4>
+    <form class="d-flex gap-2 align-items-center" method="get">
+        <select name="month" class="form-select form-select-sm" style="width:auto;">
+            {% for m in months %}
+            <option value="{{ m }}" {% if m == current_month %}selected{% endif %}>{{ m[:4] }}年{{ m[5:] }}月</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i> 查看</button>
+    </form>
+</div>
+
+<div class="stat-row">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-calendar-range"></i></div>
+        <div class="stat-body">
+            <div class="number">{{ summary.total_days }}</div>
+            <div class="label">统计天数</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-body">
+            <div class="number text-success">{{ summary.normal }}</div>
+            <div class="label">正常</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="bi bi-exclamation-circle"></i></div>
+        <div class="stat-body">
+            <div class="number text-warning">{{ summary.late + summary.early_leave }}</div>
+            <div class="label">迟到+早退</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
+        <div class="stat-body">
+            <div class="number text-danger">{{ summary.anomaly }}</div>
+            <div class="label">异常</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart" style="color:var(--primary)"></i> 每日考勤分布</div>
+            <div class="card-body">
+                <canvas id="attendanceChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pie-chart" style="color:var(--primary)"></i> 异常类型分布</div>
+            <div class="card-body">
+                <canvas id="anomalyChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><i class="bi bi-trophy" style="color:var(--warning)"></i> 迟到排行</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:50px;">排名</th>
+                        <th>姓名</th>
+                        <th>工号</th>
+                        <th>迟到</th>
+                        <th>早退</th>
+                        <th>缺卡</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in stats %}
+                    <tr>
+                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ loop.index }}</span></td>
+                        <td><strong>{{ s.name }}</strong></td>
+                        <td style="color:var(--gray-400);font-size:.85rem;">{{ s.employee_id }}</td>
+                        <td><span class="badge badge-late-count">{{ s.late }}</span></td>
+                        <td><span class="badge badge-early-count">{{ s.early_leave }}</span></td>
+                        <td><span class="badge badge-missed-count">{{ s.missed }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">暂无数据</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+new Chart(document.getElementById('attendanceChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ chart_data.labels|safe }},
+        datasets: [
+            { label: '正常', data: {{ chart_data.normal|safe }}, backgroundColor: 'rgba(16,185,129,.6)', borderRadius: 3 },
+            { label: '迟到', data: {{ chart_data.late|safe }}, backgroundColor: 'rgba(245,158,11,.6)', borderRadius: 3 },
+            { label: '早退', data: {{ chart_data.early_leave|safe }}, backgroundColor: 'rgba(6,182,212,.6)', borderRadius: 3 },
+            { label: '缺卡', data: {{ chart_data.missed|safe }}, backgroundColor: 'rgba(239,68,68,.6)', borderRadius: 3 },
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } },
+        scales: {
+            x: { stacked: true, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' } }
+        }
+    }
+});
+
+new Chart(document.getElementById('anomalyChart'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ chart_data.anomaly_labels|safe }},
+        datasets: [{
+            data: {{ chart_data.anomaly_values|safe }},
+            backgroundColor: ['rgba(245,158,11,.7)', 'rgba(6,182,212,.7)', 'rgba(239,68,68,.7)', 'rgba(139,92,246,.7)'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } },
+        cutout: '65%',
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
