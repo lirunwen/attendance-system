@@ -4,6 +4,7 @@ from models import Shift, Location, Employee, Record, Attendance
 from forms import ShiftForm, LocationForm, EmployeeForm, AttendanceRemarkForm
 from utils.excel_parser import generate_template, parse_attendance_file, save_records
 from utils.attendance_calc import recalc_all
+from utils.excel_exporter import build_export, ATTENDANCE_COLUMNS, ANOMALY_COLUMNS, STATISTICS_COLUMNS
 from datetime import datetime, date, timedelta
 import os, tempfile
 
@@ -350,9 +351,11 @@ def attendance_view():
         table_data.append((emp.employee_id, emp.name, row))
 
     months = get_month_list()
+    all_columns = ATTENDANCE_COLUMNS
     return render_template('attendance/list.html',
                            table_data=table_data, days=[d.day for d in days],
-                           months=months, current_month=month_str, query=query)
+                           months=months, current_month=month_str, query=query,
+                           all_columns=all_columns, STATUS_CN=STATUS_CN)
 
 # ─── Anomalies ──────────────────────────────────────────────
 @main_bp.route('/anomalies')
@@ -368,7 +371,8 @@ def anomalies():
         q = q.filter(Attendance.clerk_remark != '', Attendance.clerk_remark.isnot(None))
 
     return render_template('anomalies/list.html',
-                           anomalies=q.all(), form=form, filter=filter_)
+                           anomalies=q.all(), form=form, filter=filter_,
+                           all_columns=ANOMALY_COLUMNS, STATUS_CN=STATUS_CN)
 
 @main_bp.route('/anomalies/<int:id>/data')
 def anomaly_data(id):
@@ -471,4 +475,147 @@ def statistics():
 
     return render_template('statistics/list.html', stats=stats_list,
                            summary=summary, chart_data=chart_data,
-                           months=months, current_month=month_str)
+                           months=months, current_month=month_str,
+                           all_columns=STATISTICS_COLUMNS)
+
+
+# ─── Export ────────────────────────────────────────────────
+@main_bp.route('/attendance/export', methods=['POST'])
+def attendance_export():
+    columns_json = request.form.get('columns', '[]')
+    import json
+    selected = json.loads(columns_json)
+
+    month_str = request.form.get('month', today.strftime('%Y-%m'))
+    query = request.form.get('q', '').strip()
+    try:
+        year, month = map(int, month_str.split('-'))
+    except ValueError:
+        year, month = today.year, today.month
+
+    days = get_month_dates(year, month)
+    col_defs = [(k, n) for k, n in ATTENDANCE_COLUMNS if k in selected or not selected]
+    if not col_defs:
+        col_defs = ATTENDANCE_COLUMNS
+
+    emps = Employee.query.filter_by(is_active=True).order_by(Employee.employee_id).all()
+    atts = Attendance.query.filter(
+        Attendance.date.between(days[0], days[-1])
+    ).order_by(Attendance.employee_id, Attendance.date).all()
+
+    att_map = {}
+    for a in atts:
+        att_map[(a.employee_id, a.date.isoformat())] = a
+
+    rows = []
+    for emp in emps:
+        if query and query not in emp.name and query not in emp.employee_id:
+            continue
+        for d in days:
+            ds = d.isoformat()
+            a = att_map.get((emp.employee_id, ds))
+            if a and a.status != 'absent':
+                rows.append(build_att_row(a, emp))
+            else:
+                rows.append({'employee_name': emp.name, 'employee_id': emp.employee_id,
+                             'date': str(d), 'status_cn': '缺勤', 'punch_in': '', 'punch_out': '',
+                             'shift_name': '', 'location_name': '', 'clerk_remark': ''})
+
+    buf = build_export(col_defs, rows, f'考勤_{month_str}')
+    return send_file(buf, as_attachment=True,
+                     download_name=f'考勤数据_{month_str}.xlsx',
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@main_bp.route('/anomalies/export', methods=['POST'])
+def anomalies_export():
+    columns_json = request.form.get('columns', '[]')
+    import json
+    selected = json.loads(columns_json)
+
+    filter_ = request.form.get('filter', 'all')
+    q = Attendance.query.filter(Attendance.is_anomaly == True).order_by(Attendance.date.desc())
+    if filter_ == 'unresolved':
+        q = q.filter((Attendance.clerk_remark == '') | (Attendance.clerk_remark.is_(None)))
+    elif filter_ == 'resolved':
+        q = q.filter(Attendance.clerk_remark != '', Attendance.clerk_remark.isnot(None))
+
+    col_defs = [(k, n) for k, n in ANOMALY_COLUMNS if k in selected or not selected]
+    if not col_defs:
+        col_defs = ANOMALY_COLUMNS
+
+    rows = [build_att_row(a) for a in q.all()]
+    buf = build_export(col_defs, rows, '异常反馈')
+    return send_file(buf, as_attachment=True,
+                     download_name='异常反馈.xlsx',
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@main_bp.route('/statistics/export', methods=['POST'])
+def statistics_export():
+    columns_json = request.form.get('columns', '[]')
+    import json
+    selected = json.loads(columns_json)
+
+    month_str = request.form.get('month', today.strftime('%Y-%m'))
+    try:
+        year, month = map(int, month_str.split('-'))
+    except ValueError:
+        year, month = today.year, today.month
+
+    days = get_month_dates(year, month)
+    atts = Attendance.query.filter(Attendance.date.between(days[0], days[-1])).all()
+
+    col_defs = [(k, n) for k, n in STATISTICS_COLUMNS if k in selected or not selected]
+    if not col_defs:
+        col_defs = STATISTICS_COLUMNS
+
+    stats = {}
+    for a in atts:
+        if a.employee_id not in stats:
+            stats[a.employee_id] = {
+                'employee_name': a.employee_name,
+                'employee_id': a.employee_id,
+                'late': 0, 'early_leave': 0, 'missed': 0, 'normal': 0, 'total': 0
+            }
+        s = stats[a.employee_id]
+        s['total'] += 1
+        if a.status in ('late', 'both'):
+            s['late'] += 1
+        elif a.status == 'early_leave':
+            s['early_leave'] += 1
+        elif a.status in ('no_punch_in', 'no_punch_out', 'absent'):
+            s['missed'] += 1
+        else:
+            s['normal'] += 1
+
+    buf = build_export(col_defs, list(stats.values()), f'统计_{month_str}')
+    return send_file(buf, as_attachment=True,
+                     download_name=f'考勤统计_{month_str}.xlsx',
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+def build_att_row(a, emp=None):
+    """将 Attendance 记录转为导出行"""
+    from models import Shift, Location
+    shift_name = ''
+    if a.shift_id:
+        shift = Shift.query.get(a.shift_id)
+        if shift:
+            shift_name = shift.name
+    loc_name = ''
+    if a.location_id:
+        loc = Location.query.get(a.location_id)
+        if loc:
+            loc_name = loc.name
+    return {
+        'employee_name': a.employee_name,
+        'employee_id': a.employee_id,
+        'date': str(a.date),
+        'shift_name': shift_name,
+        'punch_in': a.punch_in.strftime('%H:%M') if a.punch_in else '',
+        'punch_out': a.punch_out.strftime('%H:%M') if a.punch_out else '',
+        'location_name': loc_name,
+        'status_cn': STATUS_CN.get(a.status, a.status),
+        'clerk_remark': a.clerk_remark or '',
+    }

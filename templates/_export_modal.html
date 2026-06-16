@@ -1,0 +1,44 @@
+<!-- 导出列选择弹窗 -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ export_url or request.path + '/export' }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-download" style="color:var(--success)"></i> 导出数据</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3" style="font-size:.9rem;">选择要导出的列：</p>
+                    <div class="row g-2">
+                        {% for key, name in all_columns %}
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="columns" value="{{ key }}" id="col_{{ key }}" checked>
+                                <label class="form-check-label" for="col_{{ key }}">{{ name }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <hr>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('#exportModal input[name=columns]').forEach(c=>c.checked=true)">全选</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('#exportModal input[name=columns]').forEach(c=>c.checked=false)">全不选</button>
+                    </div>
+                    {% if request.path.startswith('/attendance') or request.path.startswith('/statistics') %}
+                    <input type="hidden" name="month" value="{{ current_month }}">
+                    {% endif %}
+                    {% if request.path.startswith('/attendance') %}
+                    <input type="hidden" name="q" value="{{ query or '' }}">
+                    {% endif %}
+                    {% if request.path.startswith('/anomalies') %}
+                    <input type="hidden" name="filter" value="{{ filter or 'all' }}">
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-download"></i> 导出 Excel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
