@@ -1,0 +1,28 @@
+{% extends "auth/base.html" %}
+{% block title %}登录{% endblock %}
+
+{% block content %}
+<div class="auth-logo"><i class="bi bi-building-check"></i></div>
+<h1 class="auth-title">考勤管理系统</h1>
+<p class="auth-subtitle">请登录以继续</p>
+
+<form method="post">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-person"></i> 用户名</label>
+        {{ form.username(class="form-control", placeholder="输入用户名") }}
+    </div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-lock"></i> 密码</label>
+        {{ form.password(class="form-control", placeholder="输入密码") }}
+    </div>
+    {{ form.submit(class="btn btn-primary w-100") }}
+</form>
+
+<div class="text-center mt-3">
+    <small class="text-muted">
+        还没有账号？
+        <a href="{{ url_for('main.register') }}" style="color:var(--primary);text-decoration:none;font-weight:600;">注册</a>
+    </small>
+</div>
+{% endblock %}

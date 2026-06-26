@@ -13,6 +13,13 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        # 如果没有任何用户，创建一个默认管理员
+        from models import User
+        if not User.query.first():
+            admin = User(username='admin', display_name='管理员', is_admin=True)
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
 
     return app
 

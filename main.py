@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, session as flask_session
 from extensions import db
-from models import Shift, Location, Employee, Record, Attendance
-from forms import ShiftForm, LocationForm, EmployeeForm, AttendanceRemarkForm
+from models import Shift, Location, Employee, Record, Attendance, User
+from forms import ShiftForm, LocationForm, EmployeeForm, AttendanceRemarkForm, LoginForm, RegisterForm
 from utils.excel_parser import generate_template, parse_attendance_file, save_records
 from utils.attendance_calc import recalc_all
 from utils.excel_exporter import build_export, ATTENDANCE_COLUMNS, ANOMALY_COLUMNS, STATISTICS_COLUMNS
@@ -11,10 +11,76 @@ import os, tempfile
 main_bp = Blueprint('main', __name__)
 today = date.today()
 
+# ─── Auth Helpers ──────────────────────────────────────────
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in flask_session:
+            return redirect(url_for('main.login'))
+        return f(*args, **kwargs)
+    return decorated
+
+def current_user():
+    if 'user_id' in flask_session:
+        return User.query.get(flask_session['user_id'])
+    return None
+
+# 全局登录检查
+@main_bp.before_request
+def check_login():
+    public_routes = ['main.login', 'main.register']
+    if request.endpoint not in public_routes and not request.endpoint.startswith('static') and 'user_id' not in flask_session:
+        return redirect(url_for('main.login'))
+
+# ─── Auth Routes ────────────────────────────────────────────
+@main_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and user.check_password(form.password.data):
+            flask_session['user_id'] = user.id
+            flask_session['username'] = user.username
+            flask_session['display_name'] = user.display_name
+            flash(f'欢迎回来，{user.display_name or user.username}', 'success')
+            return redirect(url_for('main.index'))
+        flash('用户名或密码错误', 'error')
+    return render_template('auth/login.html', form=form)
+
+@main_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    # 如果已有用户，注册需登录（仅管理员可操作）
+    if User.query.first() and 'user_id' not in flask_session:
+        flash('请先登录', 'warning')
+        return redirect(url_for('main.login'))
+
+    form = RegisterForm()
+    if form.validate_on_submit():
+        if User.query.filter_by(username=form.username.data).first():
+            flash('用户名已存在', 'error')
+            return render_template('auth/register.html', form=form)
+        user = User(
+            username=form.username.data,
+            display_name=form.display_name.data,
+        )
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash('注册成功，请登录', 'success')
+        return redirect(url_for('main.login'))
+    return render_template('auth/register.html', form=form)
+
+@main_bp.route('/logout')
+def logout():
+    flask_session.clear()
+    flash('已退出登录', 'success')
+    return redirect(url_for('main.login'))
+
 # ─── Context ────────────────────────────────────────────────
 @main_bp.context_processor
-def inject_today():
-    return {'today': today}
+def inject_today_and_user():
+    return {'today': today, 'current_user': current_user()}
 
 # ─── Helpers ────────────────────────────────────────────────
 def get_month_dates(year, month):
@@ -77,7 +143,7 @@ def index():
     return render_template('index.html', stats=stats, recent_anomalies=recent)
 
 # ─── Shifts ─────────────────────────────────────────────────
-@main_bp.route('/shifts')
+@main_bp.route('/shifts', endpoint='shifts')
 def shifts():
     form = ShiftForm()
     shifts = Shift.query.order_by(Shift.id).all()

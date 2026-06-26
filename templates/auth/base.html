@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}登录{% endblock %} - 考勤管理系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+        }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .auth-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+            animation: fadeUp .5s ease-out;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .auth-card {
+            background: rgba(255,255,255,.98);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,.3);
+        }
+        .auth-logo {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), #a78bfa);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #fff;
+            margin: 0 auto 1rem;
+        }
+        .auth-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #1e293b;
+            margin-bottom: .25rem;
+        }
+        .auth-subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: .9rem;
+            margin-bottom: 1.75rem;
+        }
+        .form-control {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: .65rem .85rem;
+            font-size: .95rem;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+        }
+        .form-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: .85rem;
+            margin-bottom: .35rem;
+        }
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            border-radius: 10px;
+            padding: .7rem;
+            font-weight: 600;
+            transition: all .2s;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99,102,241,.3);
+        }
+        .alert {
+            border: none;
+            border-radius: 10px;
+            font-size: .9rem;
+            padding: .75rem 1rem;
+        }
+        .alert-danger { background: #fef2f2; color: #dc2626; }
+        .alert-success { background: #f0fdf4; color: #16a34a; }
+        .alert-warning { background: #fefce8; color: #d97706; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" style="font-size:.8rem;"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

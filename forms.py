@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, TextAreaField, BooleanField, TimeField
-from wtforms.validators import DataRequired, Optional
+from wtforms.validators import DataRequired, Optional, EqualTo, Length
 
 class ShiftForm(FlaskForm):
     name = StringField('班次名称', validators=[DataRequired()])
@@ -24,3 +24,15 @@ class EmployeeForm(FlaskForm):
 class AttendanceRemarkForm(FlaskForm):
     clerk_remark = TextAreaField('文员备注', render_kw={'rows': 3})
     submit = SubmitField('保存')
+
+class LoginForm(FlaskForm):
+    username = StringField('用户名', validators=[DataRequired()])
+    password = PasswordField('密码', validators=[DataRequired()])
+    submit = SubmitField('登录')
+
+class RegisterForm(FlaskForm):
+    username = StringField('用户名', validators=[DataRequired(), Length(min=2, max=32)])
+    display_name = StringField('显示名称', validators=[DataRequired()])
+    password = PasswordField('密码', validators=[DataRequired(), Length(min=4)])
+    confirm = PasswordField('确认密码', validators=[DataRequired(), EqualTo('password', message='两次密码不一致')])
+    submit = SubmitField('注册')
