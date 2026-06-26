@@ -4,97 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}考勤管理系统{% endblock %}</title>
-    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style>
+        .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); }
+        .gradient-bg { background: linear-gradient(135deg, #165DFF 0%, #0A4BDB 100%); }
+        .gradient-bg-hover { background: linear-gradient(135deg, #165DFF 0%, #0A4BDB 100%); }
+        .gradient-bg-hover:hover { background: linear-gradient(135deg, #1A6BFF 0%, #1055E0 100%); }
+        .sidebar-link { @apply flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-[#C9CDD4] hover:bg-white/10 hover:text-white; }
+        .sidebar-link.active { @apply gradient-bg text-white font-medium shadow-lg; }
+        .stat-card { @apply bg-white rounded-xl p-5 card-shadow card-hover; }
+        .chart-card { @apply bg-white rounded-xl p-6 card-shadow; }
+        .page-title { @apply text-[clamp(1.35rem,2.5vw,1.75rem)] font-bold text-[#1D2129]; }
+        .section-title { @apply text-base font-semibold text-[#1D2129]; }
+        .btn-primary { @apply gradient-bg-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-lg active:scale-[0.98]; }
+        .btn-primary-sm { @apply gradient-bg-hover text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-lg; }
+        .btn-outline { @apply border border-[#E5E6EB] text-[#4E5969] px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-[#F2F3F5] hover:border-[#C9CDD4]; }
+        .btn-outline-sm { @apply border border-[#E5E6EB] text-[#4E5969] px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-[#F2F3F5] hover:border-[#C9CDD4]; }
+        .btn-success { @apply bg-[#52C41A] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-[#43A514] hover:shadow-lg; }
+        .btn-warning { @apply bg-[#FAAD14] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-[#D9920B] hover:shadow-lg; }
+        .btn-danger { @apply bg-[#FF4D4F] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-[#D9363E] hover:shadow-lg; }
+        .form-input { @apply w-full border border-[#E5E6EB] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#165DFF]/30 focus:border-[#165DFF] transition-all; }
+        .form-select { @apply w-full border border-[#E5E6EB] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#165DFF]/30 focus:border-[#165DFF] transition-all appearance-none; }
+        .form-label { @apply block text-sm font-medium text-[#4E5969] mb-1.5; }
+        .badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
+        .badge-normal { @apply bg-[#E8F8E0] text-[#52C41A]; }
+        .badge-late, .badge-both { @apply bg-[#FFF7E6] text-[#FAAD14]; }
+        .badge-early_leave { @apply bg-[#E6F7FF] text-[#36CFC9]; }
+        .badge-no_punch_in, .badge-no_punch_out, .badge-absent { @apply bg-[#FFF0F0] text-[#FF4D4F]; }
+        .badge-anomaly { @apply bg-[#FFF0F0] text-[#FF4D4F]; }
+        .table-header { @apply bg-[#F2F3F5] text-left text-xs font-medium text-[#4E5969] uppercase tracking-wider px-4 py-3; }
+        .table-cell { @apply px-4 py-3 text-sm border-b border-[#F2F3F5]; }
+        .modal-mask { @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center; }
+        .modal-content { @apply bg-white rounded-2xl card-shadow max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto; }
+        .attendance-cell { @apply inline-flex items-center justify-center w-7 h-7 rounded-md text-xs font-semibold transition-all duration-150 cursor-help; }
+        .attendance-cell:hover { transform: scale(1.2); }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #C9CDD4; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #A0A6B0; }
+        /* Fade in animation */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.35s ease-out both; }
+        .fade-in:nth-child(1) { animation-delay: 0s; }
+        .fade-in:nth-child(2) { animation-delay: 0.05s; }
+        .fade-in:nth-child(3) { animation-delay: 0.10s; }
+        .fade-in:nth-child(4) { animation-delay: 0.15s; }
+    </style>
 </head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="sidebar p-0">
-                <div class="sidebar-header">
-                    <div class="logo-icon"><i class="bi bi-building-check"></i></div>
-                    <h5>考勤管理</h5>
-                </div>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('main.index') }}">
-                            <i class="bi bi-speedometer2"></i> 仪表盘
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'shifts' %}active{% endif %}" href="{{ url_for('main.shifts') }}">
-                            <i class="bi bi-clock"></i> 班次管理
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'locations' %}active{% endif %}" href="{{ url_for('main.locations') }}">
-                            <i class="bi bi-geo-alt"></i> 地点管理
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'employees' %}active{% endif %}" href="{{ url_for('main.employees') }}">
-                            <i class="bi bi-people"></i> 员工管理
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'import' %}active{% endif %}" href="{{ url_for('main.import_data') }}">
-                            <i class="bi bi-upload"></i> 数据导入
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'attendance' %}active{% endif %}" href="{{ url_for('main.attendance_view') }}">
-                            <i class="bi bi-table"></i> 考勤查看
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'anomalies' %}active{% endif %}" href="{{ url_for('main.anomalies') }}">
-                            <i class="bi bi-exclamation-triangle"></i> 异常反馈
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'statistics' %}active{% endif %}" href="{{ url_for('main.statistics') }}">
-                            <i class="bi bi-graph-up"></i> 统计报表
-                        </a>
-                    </li>
-                </ul>
-                <div class="sidebar-footer">
-                    {% if current_user %}
-                    <div class="d-flex align-items-center gap-2 mb-2" style="color:rgba(255,255,255,.6);">
-                        <i class="bi bi-person-circle"></i>
-                        <small>{{ current_user.display_name or current_user.username }}</small>
-                    </div>
-                    {% endif %}
-                    <div class="d-flex justify-content-between">
-                        <small>v1.0</small>
-                        <a href="{{ url_for('main.logout') }}" class="text-decoration-none" style="color:rgba(255,255,255,.4);font-size:.75rem;">
-                            <i class="bi bi-box-arrow-right"></i> 退出
-                        </a>
-                    </div>
-                </div>
+<body class="bg-[#F2F3F5] font-sans text-[#1D2129] min-h-screen flex">
+
+    <!-- Sidebar -->
+    <aside class="w-60 bg-[#1D2129] min-h-screen flex flex-col flex-shrink-0">
+        <!-- Logo -->
+        <div class="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+            <div class="gradient-bg text-white p-2 rounded-lg flex-shrink-0">
+                <i class="fa fa-calendar-check-o text-lg"></i>
             </div>
-
-            <!-- Main Content -->
-            <div class="main-content">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                {% endfor %}
-                {% endif %}
-                {% endwith %}
-
-                {% block content %}{% endblock %}
+            <div>
+                <h1 class="text-base font-bold text-white">考勤管理</h1>
+                <p class="text-[10px] text-[#C9CDD4]">Attendance System</p>
             </div>
         </div>
+
+        <!-- Nav -->
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <a href="{{ url_for('main.index') }}" class="sidebar-link {% if active_page == 'dashboard' %}active{% endif %}">
+                <i class="fa fa-dashboard text-sm w-5 text-center"></i><span>仪表盘</span>
+            </a>
+            <a href="{{ url_for('main.shifts') }}" class="sidebar-link {% if active_page == 'shifts' %}active{% endif %}">
+                <i class="fa fa-clock-o text-sm w-5 text-center"></i><span>班次管理</span>
+            </a>
+            <a href="{{ url_for('main.locations') }}" class="sidebar-link {% if active_page == 'locations' %}active{% endif %}">
+                <i class="fa fa-map-marker text-sm w-5 text-center"></i><span>地点管理</span>
+            </a>
+            <a href="{{ url_for('main.employees') }}" class="sidebar-link {% if active_page == 'employees' %}active{% endif %}">
+                <i class="fa fa-users text-sm w-5 text-center"></i><span>员工管理</span>
+            </a>
+            <a href="{{ url_for('main.import_data') }}" class="sidebar-link {% if active_page == 'import' %}active{% endif %}">
+                <i class="fa fa-upload text-sm w-5 text-center"></i><span>数据导入</span>
+            </a>
+            <a href="{{ url_for('main.attendance_view') }}" class="sidebar-link {% if active_page == 'attendance' %}active{% endif %}">
+                <i class="fa fa-table text-sm w-5 text-center"></i><span>考勤查看</span>
+            </a>
+            <a href="{{ url_for('main.anomalies') }}" class="sidebar-link {% if active_page == 'anomalies' %}active{% endif %}">
+                <i class="fa fa-exclamation-triangle text-sm w-5 text-center"></i><span>异常反馈</span>
+            </a>
+            <a href="{{ url_for('main.statistics') }}" class="sidebar-link {% if active_page == 'statistics' %}active{% endif %}">
+                <i class="fa fa-bar-chart text-sm w-5 text-center"></i><span>统计报表</span>
+            </a>
+        </nav>
+
+        <!-- Footer -->
+        <div class="px-5 py-4 border-t border-white/10">
+            {% if current_user %}
+            <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {{ current_user.display_name[0] if current_user.display_name else 'U' }}
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-white truncate">{{ current_user.display_name or current_user.username }}</p>
+                    <p class="text-[10px] text-[#C9CDD4]">在线</p>
+                </div>
+            </div>
+            {% endif %}
+            <a href="{{ url_for('main.logout') }}" class="flex items-center gap-2 text-xs text-[#C9CDD4] hover:text-white transition-colors">
+                <i class="fa fa-sign-out"></i>
+                <span>退出登录</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-h-screen">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="px-6 pt-4">
+            {% for category, message in messages %}
+            <div class="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium mb-2
+                {% if category == 'success' %}bg-[#E8F8E0] text-[#52C41A]
+                {% elif category == 'error' %}bg-[#FFF0F0] text-[#FF4D4F]
+                {% elif category == 'warning' %}bg-[#FFF7E6] text-[#FAAD14]
+                {% else %}bg-[#E6F7FF] text-[#165DFF]{% endif %}">
+                <i class="fa {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-times-circle{% elif category == 'warning' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                <span>{{ message }}</span>
+                <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <main class="flex-1 px-6 py-5">
+            {% block content %}{% endblock %}
+        </main>
     </div>
 
-    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

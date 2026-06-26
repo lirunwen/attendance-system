@@ -8,6 +8,9 @@ import requests
 BASE = 'http://127.0.0.1:5100'
 s = requests.Session()
 
+# Login first (system now requires auth)
+s.post(f'{BASE}/login', data={'username': 'admin', 'password': 'admin123'})
+
 ok = total = 0
 
 def check(name, cond):
@@ -53,7 +56,7 @@ wb.save(tmp.name)
 # 5. Import
 with open(tmp.name, 'rb') as f:
     r = s.post(f'{BASE}/import/upload', files={'file': f})
-check('Import data', '导入记录数' in r.text)
+check('Import data', '导入记录' in r.text or '统计天数' in r.text)
 os.unlink(tmp.name)
 
 # 6. Check attendance

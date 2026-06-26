@@ -1,98 +1,144 @@
 {% extends "base.html" %}
-{% block title %}仪表盘 - 考勤管理系统{% endblock %}
+{% block title %}仪表盘 - 考勤管理{% endblock %}
 {% set active_page = 'dashboard' %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-    <h4><i class="bi bi-speedometer2"></i> 仪表盘</h4>
-    <span class="text-muted" style="font-size:.9rem;"><i class="bi bi-calendar3"></i> {{ today.year }}年{{ today.month }}月</span>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+    <div>
+        <h2 class="page-title">仪表盘</h2>
+        <p class="text-[#4E5969] text-sm mt-1">考勤系统概览和快速操作</p>
+    </div>
+    <span class="text-[#C9CDD4] text-sm flex items-center gap-1.5">
+        <i class="fa fa-calendar"></i>
+        {{ today.year }}年{{ today.month }}月
+    </span>
 </div>
 
-<div class="stat-row">
-    <div class="stat-card">
-        <div class="stat-icon blue"><i class="bi bi-people"></i></div>
-        <div class="stat-body">
-            <div class="number">{{ stats.total_employees }}</div>
-            <div class="label">在职员工</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+    <div class="stat-card fade-in">
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <p class="text-[#4E5969] text-xs">在职员工</p>
+                <h3 class="text-3xl font-bold mt-1">{{ stats.total_employees }}</h3>
+            </div>
+            <div class="bg-[#165DFF]/10 p-2.5 rounded-lg"><i class="fa fa-users text-[#165DFF] text-lg"></i></div>
+        </div>
+        <div class="flex items-center text-xs text-[#C9CDD4]">
+            <i class="fa fa-users mr-1"></i> <span>已登记员工总数</span>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
-        <div class="stat-body">
-            <div class="number">{{ stats.attendance_rate }}%</div>
-            <div class="label">本月出勤率</div>
+    <div class="stat-card fade-in">
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <p class="text-[#4E5969] text-xs">本月出勤率</p>
+                <h3 class="text-3xl font-bold mt-1">{{ stats.attendance_rate }}%</h3>
+            </div>
+            <div class="bg-[#52C41A]/10 p-2.5 rounded-lg"><i class="fa fa-check-circle text-[#52C41A] text-lg"></i></div>
+        </div>
+        <div class="flex items-center text-xs text-[#C9CDD4]">
+            <i class="fa fa-calendar mr-1"></i> <span>正常出勤占比</span>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon yellow"><i class="bi bi-exclamation-circle"></i></div>
-        <div class="stat-body">
-            <div class="number">{{ stats.late_count }}</div>
-            <div class="label">本月迟到</div>
+    <div class="stat-card fade-in">
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <p class="text-[#4E5969] text-xs">本月迟到</p>
+                <h3 class="text-3xl font-bold mt-1 text-[#FAAD14]">{{ stats.late_count }}</h3>
+            </div>
+            <div class="bg-[#FAAD14]/10 p-2.5 rounded-lg"><i class="fa fa-exclamation-circle text-[#FAAD14] text-lg"></i></div>
+        </div>
+        <div class="flex items-center text-xs text-[#C9CDD4]">
+            <i class="fa fa-clock-o mr-1"></i> <span>需关注考勤纪律</span>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
-        <div class="stat-body">
-            <div class="number">{{ stats.anomaly_count }}</div>
-            <div class="label">待处理异常</div>
+    <div class="stat-card fade-in">
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <p class="text-[#4E5969] text-xs">待处理异常</p>
+                <h3 class="text-3xl font-bold mt-1 text-[#FF4D4F]">{{ stats.anomaly_count }}</h3>
+            </div>
+            <div class="bg-[#FF4D4F]/10 p-2.5 rounded-lg"><i class="fa fa-exclamation-triangle text-[#FF4D4F] text-lg"></i></div>
+        </div>
+        <div class="flex items-center text-xs text-[#C9CDD4]">
+            <i class="fa fa-hourglass-half mr-1"></i> <span>需要文员处理</span>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><i class="bi bi-exclamation-triangle" style="color:var(--warning)"></i> 异常提醒</div>
-            <div class="card-body p-0">
-                {% if recent_anomalies %}
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>日期</th>
-                                <th>姓名</th>
-                                <th>状态</th>
-                                <th class="text-end">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for a in recent_anomalies %}
-                            <tr>
-                                <td>{{ a.date }}</td>
-                                <td><strong>{{ a.employee_name }}</strong></td>
-                                <td><span class="badge badge-{{ a.status }}">{{ a.status }}</span></td>
-                                <td class="text-end"><a href="{{ url_for('main.anomalies') }}" class="btn btn-sm btn-outline-primary">处理</a></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <i class="bi bi-check-circle" style="color:var(--success)"></i>
-                    <p>暂无异常记录</p>
-                </div>
-                {% endif %}
-            </div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="chart-card fade-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="section-title"><i class="fa fa-exclamation-triangle text-[#FAAD14] mr-2"></i>异常提醒</h3>
+            <a href="{{ url_for('main.anomalies') }}" class="text-xs text-[#165DFF] hover:underline">查看全部</a>
         </div>
+        {% if recent_anomalies %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-[#F2F3F5]">
+                        <th class="table-header rounded-tl-lg">日期</th>
+                        <th class="table-header">姓名</th>
+                        <th class="table-header">状态</th>
+                        <th class="table-header rounded-tr-lg text-right">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#F2F3F5]">
+                    {% for a in recent_anomalies %}
+                    <tr class="hover:bg-[#F2F3F5]/50 transition-colors">
+                        <td class="table-cell">{{ a.date }}</td>
+                        <td class="table-cell font-medium">{{ a.employee_name }}</td>
+                        <td class="table-cell"><span class="badge badge-{{ a.status }}">{{ a.status }}</span></td>
+                        <td class="table-cell text-right">
+                            <a href="{{ url_for('main.anomalies') }}" class="btn-outline-sm">处理</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-10 text-[#C9CDD4]">
+            <i class="fa fa-check-circle text-[#52C41A] text-3xl mb-3 block"></i>
+            <p class="text-sm">暂无异常记录</p>
+        </div>
+        {% endif %}
     </div>
 
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><i class="bi bi-lightning" style="color:var(--primary)"></i> 快速操作</div>
-            <div class="card-body quick-actions">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('main.import_data') }}" class="btn btn-primary">
-                        <i class="bi bi-upload"></i> 导入考勤数据
-                    </a>
-                    <a href="{{ url_for('main.attendance_view') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-table"></i> 查看本月考勤
-                    </a>
-                    <a href="{{ url_for('main.statistics') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-graph-up"></i> 查看统计报表
-                    </a>
+    <div class="chart-card fade-in">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="section-title"><i class="fa fa-lightning text-[#165DFF] mr-2"></i>快速操作</h3>
+        </div>
+        <div class="space-y-3">
+            <a href="{{ url_for('main.import_data') }}" class="flex items-center gap-3 p-3.5 rounded-lg border border-[#E5E6EB] hover:bg-[#F2F3F5] transition-colors group">
+                <div class="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center text-white flex-shrink-0 group-hover:shadow-lg transition-shadow">
+                    <i class="fa fa-upload"></i>
                 </div>
-            </div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">导入考勤数据</p>
+                    <p class="text-xs text-[#4E5969]">上传 Excel 打卡记录</p>
+                </div>
+                <i class="fa fa-chevron-right text-[#C9CDD4] group-hover:text-[#165DFF] transition-colors"></i>
+            </a>
+            <a href="{{ url_for('main.attendance_view') }}" class="flex items-center gap-3 p-3.5 rounded-lg border border-[#E5E6EB] hover:bg-[#F2F3F5] transition-colors group">
+                <div class="w-10 h-10 bg-[#52C41A]/10 rounded-lg flex items-center justify-center text-[#52C41A] flex-shrink-0">
+                    <i class="fa fa-table"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">查看本月考勤</p>
+                    <p class="text-xs text-[#4E5969]">月度出勤日历视图</p>
+                </div>
+                <i class="fa fa-chevron-right text-[#C9CDD4] group-hover:text-[#165DFF] transition-colors"></i>
+            </a>
+            <a href="{{ url_for('main.statistics') }}" class="flex items-center gap-3 p-3.5 rounded-lg border border-[#E5E6EB] hover:bg-[#F2F3F5] transition-colors group">
+                <div class="w-10 h-10 bg-[#FAAD14]/10 rounded-lg flex items-center justify-center text-[#FAAD14] flex-shrink-0">
+                    <i class="fa fa-bar-chart"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">查看统计报表</p>
+                    <p class="text-xs text-[#4E5969]">图表分析与排行</p>
+                </div>
+                <i class="fa fa-chevron-right text-[#C9CDD4] group-hover:text-[#165DFF] transition-colors"></i>
+            </a>
         </div>
     </div>
 </div>

@@ -3,121 +3,124 @@
 {% set active_page = 'shifts' %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-    <h4><i class="bi bi-clock"></i> 班次管理</h4>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shiftModal">
-        <i class="bi bi-plus-lg"></i> 新增班次
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+    <div>
+        <h2 class="page-title">班次管理</h2>
+        <p class="text-[#4E5969] text-sm mt-1">定义上下班时间和宽容规则</p>
+    </div>
+    <button class="btn-primary flex items-center gap-2" onclick="openModal()">
+        <i class="fa fa-plus"></i> 新增班次
     </button>
 </div>
 
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>班次名称</th>
-                        <th>上班时间</th>
-                        <th>下班时间</th>
-                        <th>迟到宽容</th>
-                        <th>早退宽容</th>
-                        <th>状态</th>
-                        <th class="text-end">操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for s in shifts %}
-                    <tr>
-                        <td><strong>{{ s.name }}</strong></td>
-                        <td>{{ s.shift_start_str() }}</td>
-                        <td>{{ s.shift_end_str() }}</td>
-                        <td>{{ s.late_minutes }} 分钟</td>
-                        <td>{{ s.early_leave_minutes }} 分钟</td>
-                        <td>
-                            {% if s.is_active %}
-                            <span class="badge bg-success bg-opacity-10 text-success">启用</span>
-                            {% else %}
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary">停用</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editShift({{ s.id }})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <form method="post" action="{{ url_for('main.shift_delete', id=s.id) }}" style="display:inline" onsubmit="return confirm('确认删除？')">
-                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="7" class="text-center text-muted py-4">暂无班次，请新增</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="chart-card">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-[#F2F3F5]">
+                    <th class="table-header rounded-tl-lg">班次名称</th>
+                    <th class="table-header">上班时间</th>
+                    <th class="table-header">下班时间</th>
+                    <th class="table-header">迟到宽容</th>
+                    <th class="table-header">早退宽容</th>
+                    <th class="table-header">状态</th>
+                    <th class="table-header rounded-tr-lg text-right">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#F2F3F5]">
+                {% for s in shifts %}
+                <tr class="hover:bg-[#F2F3F5]/50 transition-colors">
+                    <td class="table-cell font-medium">{{ s.name }}</td>
+                    <td class="table-cell">{{ s.shift_start_str() }}</td>
+                    <td class="table-cell">{{ s.shift_end_str() }}</td>
+                    <td class="table-cell">{{ s.late_minutes }} 分钟</td>
+                    <td class="table-cell">{{ s.early_leave_minutes }} 分钟</td>
+                    <td class="table-cell">
+                        {% if s.is_active %}
+                        <span class="badge badge-normal">启用</span>
+                        {% else %}
+                        <span class="badge bg-[#F2F3F5] text-[#C9CDD4]">停用</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-cell text-right">
+                        <button class="btn-outline-sm mr-1" onclick="editShift({{ s.id }})"><i class="fa fa-pencil"></i></button>
+                        <form method="post" action="{{ url_for('main.shift_delete', id=s.id) }}" style="display:inline" onsubmit="return confirm('确认删除？')">
+                            <button class="btn-outline-sm text-[#FF4D4F] hover:bg-[#FFF0F0]"><i class="fa fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center py-10 text-[#C9CDD4]">暂无班次，请新增</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- Modal -->
-<div class="modal fade" id="shiftModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle"><i class="bi bi-clock" style="color:var(--primary)"></i> 新增班次</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="shiftModal" class="modal-mask hidden">
+    <div class="modal-content p-6">
+        <form method="post">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="section-title" id="modalTitle"><i class="fa fa-clock-o text-[#165DFF] mr-2"></i>新增班次</h3>
+                <button type="button" onclick="closeModal()" class="text-[#C9CDD4] hover:text-[#4E5969]"><i class="fa fa-times text-lg"></i></button>
+            </div>
+            {{ form.hidden_tag() }}
+            <input type="hidden" name="edit_id" id="edit_id">
+            <div class="mb-4">
+                <label class="form-label">{{ form.name.label.text }}</label>
+                {{ form.name(class="form-input", id="name") }}
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="form-label">{{ form.shift_start.label.text }}</label>
+                    {{ form.shift_start(class="form-input", id="shift_start") }}
                 </div>
-                <div class="modal-body">
-                    {{ form.hidden_tag() }}
-                    <input type="hidden" name="edit_id" id="edit_id">
-                    <div class="mb-3">
-                        {{ form.name.label(class="form-label") }}
-                        {{ form.name(class="form-control", id="name") }}
-                    </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col">
-                            {{ form.shift_start.label(class="form-label") }}
-                            {{ form.shift_start(class="form-control", id="shift_start", placeholder="09:00") }}
-                        </div>
-                        <div class="col">
-                            {{ form.shift_end.label(class="form-label") }}
-                            {{ form.shift_end(class="form-control", id="shift_end", placeholder="18:00") }}
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col">
-                            {{ form.late_minutes.label(class="form-label") }}
-                            {{ form.late_minutes(class="form-control", id="late_minutes") }}
-                        </div>
-                        <div class="col">
-                            {{ form.early_leave_minutes.label(class="form-label") }}
-                            {{ form.early_leave_minutes(class="form-control", id="early_leave_minutes") }}
-                        </div>
-                    </div>
+                <div>
+                    <label class="form-label">{{ form.shift_end.label.text }}</label>
+                    {{ form.shift_end(class="form-input", id="shift_end") }}
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    {{ form.submit(class="btn btn-primary") }}
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label class="form-label">{{ form.late_minutes.label.text }}</label>
+                    {{ form.late_minutes(class="form-input", id="late_minutes") }}
                 </div>
-            </form>
-        </div>
+                <div>
+                    <label class="form-label">{{ form.early_leave_minutes.label.text }}</label>
+                    {{ form.early_leave_minutes(class="form-input", id="early_leave_minutes") }}
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="btn-outline">取消</button>
+                {{ form.submit(class="btn-primary") }}
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
+function openModal() {
+    document.getElementById('edit_id').value = '';
+    document.getElementById('name').value = '';
+    document.getElementById('shift_start').value = '';
+    document.getElementById('shift_end').value = '';
+    document.getElementById('late_minutes').value = '15';
+    document.getElementById('early_leave_minutes').value = '15';
+    document.getElementById('modalTitle').innerHTML = '<i class="fa fa-clock-o text-[#165DFF] mr-2"></i>新增班次';
+    document.getElementById('shiftModal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('shiftModal').classList.add('hidden'); }
 function editShift(id) {
-    fetch(`/shifts/${id}/data`)
-        .then(r => r.json())
-        .then(d => {
-            document.getElementById('edit_id').value = d.id;
-            document.getElementById('name').value = d.name;
-            document.getElementById('shift_start').value = d.shift_start;
-            document.getElementById('shift_end').value = d.shift_end;
-            document.getElementById('late_minutes').value = d.late_minutes;
-            document.getElementById('early_leave_minutes').value = d.early_leave_minutes;
-            document.getElementById('modalTitle').textContent = '编辑班次';
-            new bootstrap.Modal(document.getElementById('shiftModal')).show();
-        });
+    fetch(`/shifts/${id}/data`).then(r=>r.json()).then(d => {
+        document.getElementById('edit_id').value = d.id;
+        document.getElementById('name').value = d.name;
+        document.getElementById('shift_start').value = d.shift_start;
+        document.getElementById('shift_end').value = d.shift_end;
+        document.getElementById('late_minutes').value = d.late_minutes;
+        document.getElementById('early_leave_minutes').value = d.early_leave_minutes;
+        document.getElementById('modalTitle').innerHTML = '<i class="fa fa-clock-o text-[#165DFF] mr-2"></i>编辑班次';
+        document.getElementById('shiftModal').classList.remove('hidden');
+    });
 }
 </script>
 {% endblock %}

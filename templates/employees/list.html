@@ -3,135 +3,99 @@
 {% set active_page = 'employees' %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-    <h4><i class="bi bi-people"></i> 员工管理</h4>
-    <div class="d-flex gap-2">
-        <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal">
-            <i class="bi bi-upload"></i> 批量导入
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+    <div>
+        <h2 class="page-title">员工管理</h2>
+        <p class="text-[#4E5969] text-sm mt-1">维护员工信息和默认班次</p>
+    </div>
+    <div class="flex gap-2">
+        <button class="btn-outline flex items-center gap-2" onclick="document.getElementById('importFile').click()">
+            <i class="fa fa-upload"></i> 批量导入
         </button>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#empModal">
-            <i class="bi bi-plus-lg"></i> 新增员工
+        <button class="btn-primary flex items-center gap-2" onclick="openModal()">
+            <i class="fa fa-plus"></i> 新增员工
         </button>
     </div>
 </div>
+<form method="post" action="{{ url_for('main.employee_import') }}" enctype="multipart/form-data" style="display:none">
+    <input type="file" name="file" id="importFile" accept=".xlsx,.xls" onchange="this.form.submit()">
+</form>
 
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>工号</th>
-                        <th>姓名</th>
-                        <th>默认班次</th>
-                        <th>状态</th>
-                        <th class="text-end">操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for e in employees %}
-                    <tr>
-                        <td><code style="background:var(--gray-100);padding:2px 8px;border-radius:4px;">{{ e.employee_id }}</code></td>
-                        <td><strong>{{ e.name }}</strong></td>
-                        <td>{{ e.shift.name if e.shift else '<span class="text-muted">-</span>'|safe }}</td>
-                        <td>
-                            {% if e.is_active %}
-                            <span class="badge bg-success bg-opacity-10 text-success">在职</span>
-                            {% else %}
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary">离职</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editEmp({{ e.id }})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <form method="post" action="{{ url_for('main.employee_delete', id=e.id) }}" style="display:inline" onsubmit="return confirm('确认删除？')">
-                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-center text-muted py-4">暂无员工</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="chart-card">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-[#F2F3F5]">
+                    <th class="table-header rounded-tl-lg">工号</th>
+                    <th class="table-header">姓名</th>
+                    <th class="table-header">默认班次</th>
+                    <th class="table-header">状态</th>
+                    <th class="table-header rounded-tr-lg text-right">操作</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#F2F3F5]">
+                {% for e in employees %}
+                <tr class="hover:bg-[#F2F3F5]/50 transition-colors">
+                    <td class="table-cell"><code class="bg-[#F2F3F5] px-2 py-0.5 rounded text-xs">{{ e.employee_id }}</code></td>
+                    <td class="table-cell font-medium">{{ e.name }}</td>
+                    <td class="table-cell">{{ e.shift.name if e.shift else '<span class="text-[#C9CDD4]">-</span>'|safe }}</td>
+                    <td class="table-cell">
+                        {% if e.is_active %}
+                        <span class="badge badge-normal">在职</span>
+                        {% else %}
+                        <span class="badge bg-[#F2F3F5] text-[#C9CDD4]">离职</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-cell text-right">
+                        <button class="btn-outline-sm mr-1" onclick="editEmp({{ e.id }})"><i class="fa fa-pencil"></i></button>
+                        <form method="post" action="{{ url_for('main.employee_delete', id=e.id) }}" style="display:inline" onsubmit="return confirm('确认删除？')">
+                            <button class="btn-outline-sm text-[#FF4D4F] hover:bg-[#FFF0F0]"><i class="fa fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center py-10 text-[#C9CDD4]">暂无员工</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- Employee Modal -->
-<div class="modal fade" id="empModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle"><i class="bi bi-person-plus" style="color:var(--primary)"></i> 新增员工</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    {{ form.hidden_tag() }}
-                    <input type="hidden" name="edit_id" id="edit_id">
-                    <div class="mb-3">
-                        {{ form.employee_id.label(class="form-label") }}
-                        {{ form.employee_id(class="form-control", id="employee_id") }}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.name.label(class="form-label") }}
-                        {{ form.name(class="form-control", id="name") }}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.shift_id.label(class="form-label") }}
-                        {{ form.shift_id(class="form-select", id="shift_id") }}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    {{ form.submit(class="btn btn-primary") }}
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Import Modal -->
-<div class="modal fade" id="importModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" action="{{ url_for('main.employee_import') }}" enctype="multipart/form-data">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-upload" style="color:var(--success)"></i> 批量导入员工</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Excel 文件（列：工号、姓名）</label>
-                        <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
-                    </div>
-                    <a href="{{ url_for('main.download_employee_template') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-download"></i> 下载模板
-                    </a>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> 导入</button>
-                </div>
-            </form>
-        </div>
+<div id="empModal" class="modal-mask hidden">
+    <div class="modal-content p-6">
+        <form method="post">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="section-title" id="modalTitle"><i class="fa fa-user-plus text-[#165DFF] mr-2"></i>新增员工</h3>
+                <button type="button" onclick="closeModal()" class="text-[#C9CDD4] hover:text-[#4E5969]"><i class="fa fa-times text-lg"></i></button>
+            </div>
+            {{ form.hidden_tag() }}
+            <input type="hidden" name="edit_id" id="edit_id">
+            <div class="mb-4"><label class="form-label">{{ form.employee_id.label.text }}</label>{{ form.employee_id(class="form-input", id="employee_id") }}</div>
+            <div class="mb-4"><label class="form-label">{{ form.name.label.text }}</label>{{ form.name(class="form-input", id="name") }}</div>
+            <div class="mb-5"><label class="form-label">{{ form.shift_id.label.text }}</label>{{ form.shift_id(class="form-select", id="shift_id") }}</div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="btn-outline">取消</button>
+                {{ form.submit(class="btn-primary") }}
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
+function openModal() {
+    ['edit_id','employee_id','name'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('shift_id').value = '';
+    document.getElementById('modalTitle').innerHTML = '<i class="fa fa-user-plus text-[#165DFF] mr-2"></i>新增员工';
+    document.getElementById('empModal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('empModal').classList.add('hidden'); }
 function editEmp(id) {
-    fetch(`/employees/${id}/data`)
-        .then(r => r.json())
-        .then(d => {
-            document.getElementById('edit_id').value = d.id;
-            document.getElementById('employee_id').value = d.employee_id;
-            document.getElementById('name').value = d.name;
-            document.getElementById('shift_id').value = d.shift_id || '';
-            document.getElementById('modalTitle').textContent = '编辑员工';
-            new bootstrap.Modal(document.getElementById('empModal')).show();
-        });
+    fetch(`/employees/${id}/data`).then(r=>r.json()).then(d => {
+        document.getElementById('edit_id').value = d.id; document.getElementById('employee_id').value = d.employee_id;
+        document.getElementById('name').value = d.name; document.getElementById('shift_id').value = d.shift_id || '';
+        document.getElementById('modalTitle').innerHTML = '<i class="fa fa-user-plus text-[#165DFF] mr-2"></i>编辑员工';
+        document.getElementById('empModal').classList.remove('hidden');
+    });
 }
 </script>
 {% endblock %}

@@ -2,35 +2,37 @@
 {% block title %}注册{% endblock %}
 
 {% block content %}
-<div class="auth-logo"><i class="bi bi-person-plus"></i></div>
-<h1 class="auth-title">注册账号</h1>
-<p class="auth-subtitle">创建你的考勤管理账号</p>
+<div class="text-center mb-6">
+    <div class="bg-[#E6F7FF] text-[#165DFF] p-3 rounded-xl inline-flex mb-3">
+        <i class="fa fa-user-plus text-2xl"></i>
+    </div>
+    <h1 class="text-xl font-bold text-[#1D2129]">注册账号</h1>
+    <p class="text-sm text-[#4E5969] mt-1">创建考勤管理账号</p>
+</div>
 
 <form method="post">
     {{ form.hidden_tag() }}
     <div class="mb-3">
-        <label class="form-label"><i class="bi bi-person"></i> 用户名</label>
-        {{ form.username(class="form-control", placeholder="2-32个字符") }}
+        <label class="block text-sm font-medium text-[#4E5969] mb-1.5"><i class="fa fa-user mr-1"></i>用户名</label>
+        {{ form.username(class="w-full border border-[#E5E6EB] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#165DFF]/30 focus:border-[#165DFF] transition-all", placeholder="2-32个字符") }}
     </div>
     <div class="mb-3">
-        <label class="form-label"><i class="bi bi-card-text"></i> 显示名称</label>
-        {{ form.display_name(class="form-control", placeholder="你的姓名") }}
+        <label class="block text-sm font-medium text-[#4E5969] mb-1.5"><i class="fa fa-id-card mr-1"></i>显示名称</label>
+        {{ form.display_name(class="w-full border border-[#E5E6EB] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#165DFF]/30 focus:border-[#165DFF] transition-all", placeholder="你的姓名") }}
     </div>
     <div class="mb-3">
-        <label class="form-label"><i class="bi bi-lock"></i> 密码</label>
-        {{ form.password(class="form-control", placeholder="至少4个字符") }}
+        <label class="block text-sm font-medium text-[#4E5969] mb-1.5"><i class="fa fa-lock mr-1"></i>密码</label>
+        {{ form.password(class="w-full border border-[#E5E6EB] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#165DFF]/30 focus:border-[#165DFF] transition-all", placeholder="至少4个字符") }}
     </div>
-    <div class="mb-4">
-        <label class="form-label"><i class="bi bi-lock-fill"></i> 确认密码</label>
-        {{ form.confirm(class="form-control", placeholder="再次输入密码") }}
+    <div class="mb-5">
+        <label class="block text-sm font-medium text-[#4E5969] mb-1.5"><i class="fa fa-check-circle mr-1"></i>确认密码</label>
+        {{ form.confirm(class="w-full border border-[#E5E6EB] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#165DFF]/30 focus:border-[#165DFF] transition-all", placeholder="再次输入密码") }}
     </div>
-    {{ form.submit(class="btn btn-primary w-100") }}
+    {{ form.submit(class="bg-[#52C41A] text-white w-full py-2.5 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer") }}
 </form>
 
-<div class="text-center mt-3">
-    <small class="text-muted">
-        已有账号？
-        <a href="{{ url_for('main.login') }}" style="color:var(--primary);text-decoration:none;font-weight:600;">登录</a>
-    </small>
+<div class="text-center mt-4">
+    <span class="text-xs text-[#C9CDD4]">已有账号？</span>
+    <a href="{{ url_for('main.login') }}" class="text-xs text-[#165DFF] font-medium hover:underline ml-1">登录</a>
 </div>
 {% endblock %}

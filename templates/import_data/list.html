@@ -3,70 +3,67 @@
 {% set active_page = 'import' %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-    <h4><i class="bi bi-upload"></i> 数据导入</h4>
-    <a href="{{ url_for('main.download_template') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-download"></i> 下载模板
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+    <div>
+        <h2 class="page-title">数据导入</h2>
+        <p class="text-[#4E5969] text-sm mt-1">上传打卡记录 Excel 文件</p>
+    </div>
+    <a href="{{ url_for('main.download_template') }}" class="btn-outline flex items-center gap-2">
+        <i class="fa fa-download"></i> 下载模板
     </a>
 </div>
 
-<div class="card">
-    <div class="card-header"><i class="bi bi-cloud-upload" style="color:var(--primary)"></i> 上传打卡数据</div>
-    <div class="card-body">
-        <form method="post" enctype="multipart/form-data" action="{{ url_for('main.import_upload') }}">
-            <div class="mb-3">
-                <label class="form-label">选择 Excel 文件</label>
-                <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
-                <div class="form-text">文件须包含列：姓名、工号、日期、打卡时间、打卡地点（可选）</div>
-            </div>
-            <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-upload"></i> 导入并统计</button>
-        </form>
+<div class="chart-card">
+    <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center text-white flex-shrink-0">
+            <i class="fa fa-cloud-upload"></i>
+        </div>
+        <div>
+            <h3 class="section-title">上传打卡数据</h3>
+            <p class="text-xs text-[#4E5969] mt-0.5">选择包含打卡记录的 Excel 文件</p>
+        </div>
     </div>
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('main.import_upload') }}" class="border-2 border-dashed border-[#E5E6EB] rounded-xl p-8 text-center hover:border-[#165DFF]/30 hover:bg-[#F2F3F5] transition-colors">
+        <i class="fa fa-file-excel-o text-4xl text-[#C9CDD4] mb-3 block"></i>
+        <p class="text-sm text-[#4E5969] mb-2">拖拽文件到此处，或点击选择文件</p>
+        <input type="file" name="file" class="hidden" id="fileInput" accept=".xlsx,.xls" onchange="this.form.submit()">
+        <button type="button" onclick="document.getElementById('fileInput').click()" class="btn-primary">选择文件</button>
+        <p class="text-xs text-[#C9CDD4] mt-3">支持 .xlsx / .xls · 须包含列：姓名、工号、日期、打卡时间</p>
+    </form>
 </div>
 
 {% if result %}
-<div class="card">
-    <div class="card-header"><i class="bi bi-check-circle" style="color:var(--success)"></i> 导入结果</div>
-    <div class="card-body">
-        {% if result.errors %}
-        <div class="alert alert-warning">
-            <strong>数据解析警告：</strong>
-            <ul class="mb-0 mt-2">
-                {% for e in result.errors %}
-                <li>{{ e }}</li>
-                {% endfor %}
-            </ul>
+<div class="chart-card">
+    <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 bg-[#52C41A]/10 rounded-lg flex items-center justify-center text-[#52C41A] flex-shrink-0">
+            <i class="fa fa-check-circle"></i>
         </div>
-        {% endif %}
-        <div class="stat-row">
-            <div class="stat-card">
-                <div class="stat-icon blue"><i class="bi bi-database"></i></div>
-                <div class="stat-body">
-                    <div class="number">{{ result.saved }}</div>
-                    <div class="label">导入记录数</div>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon green"><i class="bi bi-calculator"></i></div>
-                <div class="stat-body">
-                    <div class="number">{{ result.att_count }}</div>
-                    <div class="label">统计考勤天数</div>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon yellow"><i class="bi bi-exclamation-circle"></i></div>
-                <div class="stat-body">
-                    <div class="number">{{ result.anomaly_count }}</div>
-                    <div class="label">异常数</div>
-                </div>
-            </div>
-        </div>
-        <div class="mt-3">
-            <a href="{{ url_for('main.attendance_view') }}" class="btn btn-outline-primary">
-                <i class="bi bi-table"></i> 查看考勤
-            </a>
+        <div>
+            <h3 class="section-title">导入结果</h3>
+            <p class="text-xs text-[#4E5969] mt-0.5">数据处理完成</p>
         </div>
     </div>
+    {% if result.errors %}
+    <div class="bg-[#FFF7E6] text-[#FAAD14] rounded-lg p-3 text-sm mb-4">
+        <strong><i class="fa fa-exclamation-triangle mr-1"></i>数据解析警告：</strong>
+        <ul class="mt-1.5 ml-5 list-disc">{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <div class="grid grid-cols-3 gap-4 mb-5">
+        <div class="bg-[#F2F3F5] rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-[#165DFF]">{{ result.saved }}</p>
+            <p class="text-xs text-[#4E5969] mt-1">导入记录</p>
+        </div>
+        <div class="bg-[#F2F3F5] rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-[#52C41A]">{{ result.att_count }}</p>
+            <p class="text-xs text-[#4E5969] mt-1">统计天数</p>
+        </div>
+        <div class="bg-[#F2F3F5] rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-[#FAAD14]">{{ result.anomaly_count }}</p>
+            <p class="text-xs text-[#4E5969] mt-1">异常记录</p>
+        </div>
+    </div>
+    <a href="{{ url_for('main.attendance_view') }}" class="btn-primary inline-flex items-center gap-2"><i class="fa fa-table"></i> 查看考勤</a>
 </div>
 {% endif %}
 {% endblock %}
